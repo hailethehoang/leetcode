@@ -1,0 +1,66 @@
+
+try (ExecutorService executor =
+         Executors.newVirtualThreadPerTaskExecutor()) {
+
+    for (int i = 0; i < 100_000; i++) {
+        executor.submit(() -> {
+            callDatabase();
+        });
+    }
+}
+
+
+Ví dụ Go:
+
+for i := 0; i < 100_000; i++ {
+    go func() {
+        callDatabase()
+    }()
+}
+
+Giới hạn concurrency:
+
+sem := make(chan struct{}, 100)
+
+for i := 0; i < 100_000; i++ {
+    go func() {
+        sem <- struct{}{}
+        defer func() { <-sem }()
+
+        callDatabase()
+    }()
+}
+
+Java tương ứng:
+
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    var semaphore = new Semaphore(100);
+
+    for (int i = 0; i < 100_000; i++) {
+        executor.submit(() -> {
+            semaphore.acquire();
+            try {
+                callDatabase();
+            } finally {
+                semaphore.release();
+            }
+            return null;
+        });
+    }
+}
+Go hay Java concurrency tốt hơn?
+
+Nếu chỉ xét runtime concurrency thuần túy:
+
+Goroutine thường nhẹ hơn và concurrency là thiết kế cốt lõi của Go.
+Channel và context.Context giúp tổ chức concurrent workflow khá tự nhiên.
+Go phù hợp với network service, proxy, gateway và worker có số connection rất lớn.
+
+Nhưng trong ứng dụng doanh nghiệp:
+
+Java virtual thread đã thu hẹp khoảng cách rất nhiều.
+Java có thể giữ code blocking dễ hiểu thay vì chuyển toàn bộ sang reactive.
+Spring Boot, JDBC, transaction, ORM và monitoring có hệ sinh thái trưởng thành.
+Java thường có lợi thế cho logic nghiệp vụ phức tạp và hệ thống enterprise đang dùng JVM.
+
+Một điểm cần nhớ: goroutine cũng không tự động tránh race condition. Cả Go lẫn Java đều cần synchronization khi cùng sửa shared state.

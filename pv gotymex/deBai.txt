@@ -1,0 +1,206 @@
+Problem 1 — The Guild’s Minimum Reserve
+A guild is planning a campaign. It has a chronological list of expected financial transactions.
+Each transaction is:
+[day, type, amount]
+
+where:
+day    = day number, from 1 to 500
+type   = 1 for income
+         0 for expense
+amount = positive integer, up to 100,000
+
+Transactions are already sorted chronologically.
+There may be multiple transactions on the same day, and they must be applied in the exact order given.
+Before the campaign begins, the guild chooses a starting reserve R.
+The balance starts as:
+balance = R
+
+For every transaction:
+income:
+balance += amount
+
+expense:
+balance -= amount
+
+The campaign fails immediately if the balance ever becomes negative.
+There is also an interest rule.
+Every fifth day:
+day 5
+day 10
+day 15
+...
+
+the guild earns:
+floor(currentBalance / 5)
+
+coins as interest.
+Important details:
+Interest happens even if there are no transactions that day.
+
+If there are transactions on an interest day:
+1. Process all transactions for that day first.
+2. Then calculate interest.
+
+Your task:
+Find the smallest starting reserve R >= 0
+such that the balance never becomes negative.
+
+Constraints shown in the test were approximately:
+number of transactions < 100,000
+day <= 500
+amount <= 100,000
+
+Example 1
+transactions = [
+  [1,0,5],
+  [1,1,10],
+  [2,0,3],
+  [3,1,2],
+  [3,0,6],
+  [4,1,8],
+  [5,0,4]
+]
+
+If:
+R = 5
+
+then:
+Day 1: out 5     -> 0
+Day 1: in 10     -> 10
+Day 2: out 3     -> 7
+Day 3: in 2      -> 9
+Day 3: out 6     -> 3
+Day 4: in 8      -> 11
+Day 5: out 4     -> 7
+Day 5: interest  -> +1
+                     8
+
+So R = 5 works.
+But:
+R = 4
+
+fails immediately:
+4 - 5 = -1
+
+Therefore:
+answer = 5
+
+Problem 2 — Latest Enabled Bank Configurations
+A banking system stores configuration revisions in this table:
+bank_config
+
+Schema:
+id             BIGINT
+name           VARCHAR(255)
+config         TEXT
+created_date   TIMESTAMP(3)
+modified_date  TIMESTAMP(3)
+revision       BIGINT
+enable         TINYINT(1)
+
+Meaning:
+id
+    unique row id
+
+name
+    configuration name
+
+config
+    configuration content
+
+revision
+    revision number for that configuration
+
+enable
+    1 = enabled
+    0 = disabled
+
+Every time a configuration is updated, a new row is inserted.
+Old rows remain for audit history.
+For example:
+id | name      | revision | enable
+-----------------------------------
+1  | transfer  | 1        | 1
+2  | transfer  | 2        | 1
+3  | transfer  | 3        | 0
+
+4  | login     | 1        | 1
+5  | login     | 2        | 1
+
+Task:
+For each configuration name,
+return its most recent enabled revision.
+
+The result must:
+include all columns
+
+and be ordered by:
+id ASC
+
+The key wording is:
+most recent enabled revision
+
+Think carefully about what should happen if the newest revision is disabled.
+Don't solve it yet—just keep that semantic question in mind.
+
+Problem 3 — PaymentRefundService Code Review
+This is the most interesting one.
+You are reviewing a Spring Boot service responsible for refunding previously captured card payments.
+The environment is approximately:
+Spring Boot 3.x
+Java 17
+Lombok
+REST API
+multiple concurrent request threads
+
+The following dependencies already exist:
+PaymentRepository
+RefundRepository
+PaymentGatewayClient
+Payment
+Refund
+
+The service receives:
+paymentId
+refund amount
+refund reason
+
+Its intended workflow is:
+1. Load the Payment.
+
+2. Verify that:
+   - payment is refundable
+   - requested refund amount does not exceed
+     the remaining refundable amount
+
+3. Persist a Refund record.
+
+4. Call external PaymentGatewayClient
+   to submit the refund.
+
+5. Retry the gateway request if it fails.
+
+6. Update Payment.refundedAmount.
+
+7. If fully refunded, update Payment.status.
+
+8. Return the Refund.
+
+getRefund(id) should return a single refund.
+
+The test says roughly:
+Read the code carefully.
+
+Leave inline comments where you see problems.
+
+Look broadly across:
+- correctness
+- concurrency
+- security
+- design
+- performance
+
+Breadth matters more than going extremely deep
+on one single issue.
+
+Wrong findings cost points.
